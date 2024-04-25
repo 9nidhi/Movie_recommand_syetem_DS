@@ -194,7 +194,7 @@ st.markdown("""
 .st-emotion-cache-1r4qj8v {
     position: absolute;
     background: black;
-    color: white;
+    color: black;
     inset: 0px;
     color-scheme: light;
     overflow: hidden;
