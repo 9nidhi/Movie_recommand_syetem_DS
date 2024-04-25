@@ -1,3 +1,119 @@
+# import pandas as pd
+# import numpy as np
+# import ast
+# from nltk.stem import PorterStemmer
+# from sklearn.feature_extraction.text import CountVectorizer
+# from sklearn.metrics.pairwise import cosine_similarity
+# import pickle
+
+# # Load datasets
+# movies = pd.read_csv('tmdb_5000_movies.csv')
+# credits = pd.read_csv('tmdb_5000_credits.csv')
+
+# # Merge datasets on 'title' column
+# movies = movies.merge(credits, on='title')
+
+# # Keep only the relevant columns
+# movies = movies[['movie_id', 'title', 'overview', 'genres', 'keywords', 'cast', 'crew']]
+
+# # Remove rows with missing values
+# movies.dropna(inplace=True)
+
+# # Function to convert genres, keywords, cast, and crew from string to list
+# # Function to convert genres, keywords, cast, and crew from string to list
+# def convert_to_list(obj):
+#     try:
+#         # Convert the string representation of list to actual list
+#         items = ast.literal_eval(obj)
+#         return [item['name'] for item in items]
+#     except:
+#         # Return an empty list if there's an error during parsing
+#         return []
+
+# # Apply conversion function to genres and keywords
+# movies['genres'] = movies['genres'].apply(convert_to_list)
+# movies['keywords'] = movies['keywords'].apply(convert_to_list)
+
+# # Function to fetch director's name from crew
+# def fetch_director(obj):
+#     try:
+#         # Parse the string representation of crew list
+#         crew_list = ast.literal_eval(obj)
+#         for crew_member in crew_list:
+#             if crew_member['job'] == 'Director':
+#                 return [crew_member['name']]
+#     except:
+#         pass
+#     return []
+
+# # Apply fetch_director function to crew
+# movies['crew'] = movies['crew'].apply(fetch_director)
+
+# # Function to get the first three cast members' names
+# def get_top_cast(obj):
+#     try:
+#         # Parse the string representation of cast list
+#         cast_list = ast.literal_eval(obj)
+#         return [cast_member['name'] for cast_member in cast_list[:3]]
+#     except:
+#         pass
+#     return []
+
+# # Apply get_top_cast function to cast
+# movies['cast'] = movies['cast'].apply(get_top_cast)
+
+# # Convert overview to list of words
+# def convert_overview(overview):
+#     if isinstance(overview, str):
+#         return overview.split()
+#     else:
+#         return []
+
+# movies['overview'] = movies['overview'].apply(convert_overview)
+
+# # Combine overview, genres, keywords, cast, and crew into a single tags list
+# def combine_tags(row):
+#     tags = row['overview'] + row['genres'] + row['keywords'] + row['cast'] + row['crew']
+#     return ' '.join(tags)
+
+# movies['tags'] = movies.apply(combine_tags, axis=1)
+
+# # Initialize PorterStemmer for stemming words
+# ps = PorterStemmer()
+
+# # Function to stem text
+# def stem(text):
+#     return ' '.join([ps.stem(word) for word in text.split()])
+
+# # Apply stemming to tags
+# movies['tags'] = movies['tags'].apply(stem)
+
+# # Initialize CountVectorizer with maximum features and English stop words
+# cv = CountVectorizer(max_features=10000, stop_words='english')
+
+# # Generate count vectors for tags
+# vectors = cv.fit_transform(movies['tags'])
+
+# # Compute cosine similarity matrix
+# similarity = cosine_similarity(vectors)
+
+# # Save DataFrame and similarity matrix for later use
+# pickle.dump(movies.to_dict(), open('movies_dict.pkl', 'wb'))
+# pickle.dump(similarity, open('similarity.pkl', 'wb'))
+
+# # Recommendation function
+# def recommend(movie):
+#     try:
+#         movie_index = movies[movies['title'] == movie].index[0]
+#         distances = similarity[movie_index]
+#         movie_list = sorted(list(enumerate(distances)), reverse=True, key=lambda x: x[1])[1:6]
+#         for i in movie_list:
+#             print(movies.iloc[i[0]].title)
+#     except IndexError:
+#         print("Movie not found. Please ensure the title is spelled correctly.")
+
+
+
 
 
 
@@ -7,13 +123,21 @@ import pickle
 import pandas as pd
 import requests
 import gzip
+import os
 # Load data and similarity
 
 with gzip.open('movies_dict_compressed.pkl.gz', 'rb') as f:
     movie_dict = pickle.load(f)
 
-with gzip.open('similarity_compressed.pkl.gz', 'rb') as f:
-    similarity = pickle.load(f)
+
+# Check if the file exists
+file_path = 'similarity_compressed.pkl.gz'
+if not os.path.exists(file_path):
+    print(f"File not found: {file_path}")
+else:
+    with gzip.open(file_path, 'rb') as f:
+        similarity = pickle.load(f)
+
 
 # Convert the movie dictionary to a pandas DataFrame
 movies = pd.DataFrame(movie_dict)
@@ -134,7 +258,6 @@ else:
         f"<div style='font-size: 10px; margin-bottom:12px; background-color: red; padding: 5px; border-radius: 5px; text-align: center;'>{movie['title']}</div>",
         unsafe_allow_html=True      
     )
-
 
 
 
