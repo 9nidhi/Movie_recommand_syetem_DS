@@ -191,6 +191,14 @@ st.markdown("""
             align-items: center;
             overflow: visible;
 }
+.st-emotion-cache-1r4qj8v {
+    position: absolute;
+    background: black;
+    color: white;
+    inset: 0px;
+    color-scheme: light;
+    overflow: hidden;
+}
     </style>
     """, unsafe_allow_html=True)
 
