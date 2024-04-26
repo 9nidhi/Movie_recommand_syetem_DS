@@ -124,20 +124,20 @@ import pandas as pd
 import requests
 import gzip
 import os
+
 # Load data and similarity
 
+# Load movie dictionary from compressed file
 with gzip.open('movies_dict_compressed.pkl.gz', 'rb') as f:
     movie_dict = pickle.load(f)
 
-
-# Check if the file exists
+# Load similarity data from compressed file
 file_path = 'similarity_compressed.pkl.gz'
 if not os.path.exists(file_path):
-    print(f"File not found: {file_path}")
+    st.error(f"File not found: {file_path}")
 else:
     with gzip.open(file_path, 'rb') as f:
         similarity = pickle.load(f)
-
 
 # Convert the movie dictionary to a pandas DataFrame
 movies = pd.DataFrame(movie_dict)
@@ -145,65 +145,85 @@ movies = pd.DataFrame(movie_dict)
 # Function to fetch movie poster from the API
 def fetch_poster(movie_id):
     # API call to fetch movie data
-    response = requests.get(f"https://api.themoviedb.org/3/movie/{movie_id}?api_key=8265bd1679663a7ea12ac168da84d2e8&language=en-US")
+    response = requests.get(
+        f"https://api.themoviedb.org/3/movie/{movie_id}?api_key=8265bd1679663a7ea12ac168da84d2e8&language=en-US"
+    )
+    # Check if the response is successful
+    if response.status_code != 200:
+        st.error(f"Failed to fetch data for movie ID {movie_id}")
+        return None
     data = response.json()
-    # Return the URL of the movie poster
-    return f"https://image.tmdb.org/t/p/w500{data['poster_path']}"
+    # Return the URL of the movie poster if available
+    if 'poster_path' in data:
+        return f"https://image.tmdb.org/t/p/w500{data['poster_path']}"
+    else:
+        return None
 
 # Function to recommend movies based on the selected movie
 def recommend(selected_movie):
     # Get the index of the selected movie
-    movie_index = movies[movies['title'] == selected_movie].index[0]
+    try:
+        movie_index = movies[movies['title'] == selected_movie].index[0]
+    except IndexError:
+        st.error(f"Movie not found: {selected_movie}")
+        return [], []
+    
     # Get the similarity scores for the selected movie
     similarity_scores = list(enumerate(similarity[movie_index]))
+
     # Sort the movies based on similarity scores
     similarity_scores = sorted(similarity_scores, key=lambda x: x[1], reverse=True)
+
     # Get the indices of the recommended movies
     recommended_indices = [i[0] for i in similarity_scores[1:6]]
+
     # Get the names and posters of the recommended movies
     recommended_movie_names = movies.iloc[recommended_indices]['title'].values
     recommended_movie_posters = [fetch_poster(movies.iloc[i]['movie_id']) for i in recommended_indices]
+
     return recommended_movie_names, recommended_movie_posters
 
 # Inject custom CSS code into the Streamlit app
-st.markdown("""
+st.markdown(
+    """
     <style>
     .st-emotion-cache-gh2jqd {
         width: 100%;
         padding: 6rem 1rem 10rem;
         max-width: 95rem;
     }
-            .st-emotion-cache-1663pn9 {
-            width: 1114.4px;
-            position: relative;
-            display: flex;
-            flex: 1 1 0%;
-            flex-direction: column;
-            gap: 1rem;
-            margin-top: -75px;
-}
-            .st-emotion-cache-zt5igj {
-            position: relative;
-            left: calc(-3rem);
-           width: calc(100% + 63rem);
-            display: flex;
-            -webkit-box-align: center;
-            align-items: center;
-            overflow: visible;
-}
-.st-emotion-cache-1r4qj8v {
-    position: absolute;
-    background: black;
-    color: black;
-    inset: 0px;
-    color-scheme: light;
-    overflow: hidden;
-}
+    .st-emotion-cache-1663pn9 {
+        width: 1114.4px;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        margin-top: -75px;
+    }
+    .st-emotion-cache-zt5igj {
+        position: relative;
+        left: calc(-3rem);
+        width: calc(100% + 63rem);
+        display: flex;
+        align-items: center;
+        overflow: visible;
+    }
+    .st-emotion-cache-1r4qj8v {
+        position: absolute;
+        background: black;
+        color: black;
+        inset: 0px;
+        color-scheme: light;
+        overflow: hidden;
+    }
     </style>
-    """, unsafe_allow_html=True)
+    """, unsafe_allow_html=True
+)
 
+# Columns layout
 col1, col2 = st.columns([1, 6])
 
+# Display header
 col1.markdown("<h1 style='text-align: center; color: red;'>ND FILMS</h1>", unsafe_allow_html=True)
 
 # Display a search box in the right column
@@ -260,12 +280,11 @@ else:
         border_radius = "5px"
         margin_bottom="12px"
       
-
-
+        # Display the movie title
         col.markdown(
-        f"<div style='font-size: 10px; margin-bottom:12px; background-color: red; padding: 5px; border-radius: 5px; text-align: center;'>{movie['title']}</div>",
-        unsafe_allow_html=True      
-    )
+            f"<div style='font-size: 10px; margin-bottom:12px; background-color: red; padding: 5px; border-radius: 5px; text-align: center;'>{movie['title']}</div>",
+            unsafe_allow_html=True
+        )
 
 
 
